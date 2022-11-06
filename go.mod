@@ -283,3 +283,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+require (
+	github.com/shoenig/go-landlock v0.1.0 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.66 // indirect
+)
