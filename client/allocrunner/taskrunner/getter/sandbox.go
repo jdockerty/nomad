@@ -39,7 +39,7 @@ func (s *sandbox) Get(env interfaces.EnvReplacer, artifact *structs.TaskArtifact
 	headers := getHeaders(env, artifact)
 	dir := getTaskDir(env)
 
-	fmt.Println("dir:", dir)
+	fmt.Println("eval taskDir:", dir)
 
 	environ := &environment{
 		HTTPReadTimeout: s.ac.HTTPReadTimeout,

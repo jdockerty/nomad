@@ -2,11 +2,34 @@ package getter
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/nomad/client/config"
+	"github.com/hashicorp/nomad/helper/users"
 	"github.com/hashicorp/nomad/nomad/structs"
+	"github.com/shoenig/test/must"
 )
+
+func setupDir(t *testing.T) (string, string) {
+	uid, gid := users.NobodyIDs()
+
+	allocDir := t.TempDir()
+	taskDir := filepath.Join(allocDir, "local")
+	topDir := filepath.Dir(allocDir)
+
+	must.NoError(t, os.Chown(topDir, int(uid), int(gid)))
+	must.NoError(t, os.Chmod(topDir, 0o755))
+
+	must.NoError(t, os.Chown(allocDir, int(uid), int(gid)))
+	must.NoError(t, os.Chmod(allocDir, 0o755))
+
+	must.NoError(t, os.Mkdir(taskDir, 0o755))
+	must.NoError(t, os.Chown(taskDir, int(uid), int(gid)))
+	must.NoError(t, os.Chmod(taskDir, 0o755))
+	return allocDir, taskDir
+}
 
 func TestSandbox_Get(t *testing.T) {
 	sbox := New(&config.ArtifactConfig{
@@ -18,8 +41,9 @@ func TestSandbox_Get(t *testing.T) {
 		S3Timeout:       0,
 	})
 
-	taskDir := t.TempDir()
+	_, taskDir := setupDir(t)
 	env := &noopReplacer{taskDir: taskDir}
+	fmt.Println("taskDir", taskDir)
 
 	artifact := &structs.TaskArtifact{
 		GetterSource:  "https://github.com/shoenig/test.git",

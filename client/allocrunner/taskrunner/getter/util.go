@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-getter"
@@ -108,11 +109,17 @@ func runCmd(env *environment) *Error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	fmt.Println("bin:", bin)
+	uid, gid := credentials()
 
 	cmd := exec.CommandContext(ctx, bin, ProcessName)
-	cmd.Env = nil
+	cmd.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin"}
 	cmd.Stdin = env.reader()
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Credential: &syscall.Credential{
+			Uid: uid,
+			Gid: gid,
+		},
+	}
 	output, err := cmd.CombinedOutput()
 	fmt.Println("output", string(output))
 	if err != nil {
