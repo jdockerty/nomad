@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -96,6 +97,18 @@ func getTaskDir(env interfaces.EnvReplacer) string {
 	return filepath.Dir(p)
 }
 
+func minimalVars() []string {
+	getOr := func(key, value string) string {
+		if v := os.Getenv(key); v != "" {
+			value = v
+		}
+		return fmt.Sprintf("%s=%s", key, value)
+	}
+	return []string{
+		getOr("PATH", "/usr/local/bin:/usr/bin:/bin"),
+	}
+}
+
 func runCmd(env *environment) *Error {
 	bin, err := exec.LookPath("nomad")
 	if err != nil {
@@ -112,7 +125,7 @@ func runCmd(env *environment) *Error {
 	uid, gid := credentials()
 
 	cmd := exec.CommandContext(ctx, bin, ProcessName)
-	cmd.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin"}
+	cmd.Env = minimalVars()
 	cmd.Stdin = env.reader()
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{
