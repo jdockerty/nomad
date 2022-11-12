@@ -29,9 +29,9 @@ func Do(name string, f MainFunc) {
 	}
 }
 
-// Expire waits for timeout to elapse, then causes the process to exit with
+// Expiration waits for timeout to elapse, then causes the process to exit with
 // the ExitTimeout exit code.
-func Expire(timeout time.Duration) {
+func Expiration(timeout time.Duration) {
 	go func() {
 		time.Sleep(timeout)
 		os.Exit(ExitTimeout)

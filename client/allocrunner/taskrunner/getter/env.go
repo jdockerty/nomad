@@ -11,11 +11,11 @@ import (
 	"github.com/hashicorp/nomad/helper"
 )
 
-// environment is encoded by the Nomad client and decoded by the getter sub-process
-// so it can know what to do. We use standard IO instead of environment variables
-// because the job-submitter has control over the environment and that is scary,
+// parameters is encoded by the Nomad client and decoded by the getter sub-process
+// so it can know what to do. We use standard IO instead of parameters variables
+// because the job-submitter has control over the parameters and that is scary,
 // see https://www.opencve.io/cve/CVE-2022-41716.
-type environment struct {
+type parameters struct {
 	// Config
 	HTTPReadTimeout time.Duration `json:"http_read_timeout"`
 	HTTPMaxBytes    int64         `json:"http_max_bytes"`
@@ -31,10 +31,10 @@ type environment struct {
 	Headers     map[string][]string `json:"artifact_headers"`
 
 	// Task Environment
-	TaskDir string
+	TaskDir string `json:"task_dir"`
 }
 
-func (e *environment) reader() io.Reader {
+func (e *parameters) reader() io.Reader {
 	b, err := json.Marshal(e)
 	if err != nil {
 		b = nil
@@ -42,11 +42,11 @@ func (e *environment) reader() io.Reader {
 	return strings.NewReader(string(b))
 }
 
-func (e *environment) read(r io.Reader) error {
+func (e *parameters) read(r io.Reader) error {
 	return json.NewDecoder(r).Decode(e)
 }
 
-func (e *environment) timeout() time.Duration {
+func (e *parameters) timeout() time.Duration {
 	max := time.Duration(0)
 	max = helper.Max(max, e.HTTPReadTimeout)
 	max = helper.Max(max, e.GCSTimeout)
@@ -62,10 +62,10 @@ const (
 	umask = 060000000
 )
 
-func (e *environment) client() *getter.Client {
+func (e *parameters) client() *getter.Client {
 	httpGetter := &getter.HttpGetter{
 		Netrc:  true,
-		Client: cleanhttp.DefaultPooledClient(),
+		Client: cleanhttp.DefaultClient(),
 		Header: e.Headers,
 
 		// Do not support the custom X-Terraform-Get header and

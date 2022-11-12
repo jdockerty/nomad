@@ -109,7 +109,7 @@ func minimalVars() []string {
 	}
 }
 
-func runCmd(env *environment) *Error {
+func runCmd(env *parameters) *Error {
 	bin, err := exec.LookPath("nomad")
 	if err != nil {
 		return &Error{

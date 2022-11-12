@@ -41,7 +41,7 @@ func (s *sandbox) Get(env interfaces.EnvReplacer, artifact *structs.TaskArtifact
 
 	fmt.Println("eval taskDir:", dir)
 
-	environ := &environment{
+	params := &parameters{
 		HTTPReadTimeout: s.ac.HTTPReadTimeout,
 		HTTPMaxBytes:    s.ac.HTTPMaxBytes,
 		GCSTimeout:      s.ac.GCSTimeout,
@@ -55,7 +55,7 @@ func (s *sandbox) Get(env interfaces.EnvReplacer, artifact *structs.TaskArtifact
 		TaskDir:         dir,
 	}
 
-	err = runCmd(environ)
+	err = runCmd(params)
 	if err != nil {
 		return err
 	}
