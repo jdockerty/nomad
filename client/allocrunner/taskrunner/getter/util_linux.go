@@ -3,7 +3,7 @@
 package getter
 
 import (
-	"os/exec"
+	"fmt"
 
 	"github.com/hashicorp/nomad/helper/users"
 	"github.com/shoenig/go-landlock"
@@ -14,22 +14,6 @@ import (
 func credentials() (uint32, uint32) {
 	uid, gid := users.NobodyIDs()
 	return uid, gid
-}
-
-// findGetterBins returns absolute paths to the executable binaries go-getter
-// may use under the hood. These paths will need to be allowed to execute under
-// landlock.
-func findGetterBins() []*landlock.Path {
-	var paths []*landlock.Path
-	lookup := func(name string) {
-		if path, err := exec.LookPath(name); err == nil {
-			paths = append(paths, landlock.File(path, "rx"))
-		}
-	}
-	lookup("getent")
-	lookup("git")
-	lookup("hg")
-	return paths
 }
 
 // lockdown isolates this process to only be able to write and create files in
@@ -44,8 +28,13 @@ func lockdown(dir string) error {
 	paths := []*landlock.Path{
 		landlock.DNS(),
 		landlock.Certs(),
+		landlock.Shared(),
+		landlock.Dir("/bin", "rx"),
+		landlock.Dir("/usr/bin", "rx"),
+		landlock.Dir("/usr/local/bin", "rx"),
 		landlock.Dir(dir, "rwc"),
 	}
-	paths = append(paths, findGetterBins()...)
-	return landlock.New(paths...).Lock(landlock.Enforce)
+	locker := landlock.New(paths...)
+	fmt.Println("LOCKER", locker)
+	return locker.Lock(landlock.Enforce)
 }

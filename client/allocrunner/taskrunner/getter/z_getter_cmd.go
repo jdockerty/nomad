@@ -35,6 +35,8 @@ func init() {
 		// headers were already replaced and are usable now
 		c := env.client()
 
+		fmt.Println("CLIENT", "source", c.Src)
+
 		// run the go-getter client
 		if err := c.Get(); err != nil {
 			fail("failed to download artifact: %v", err)
