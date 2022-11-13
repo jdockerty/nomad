@@ -21,7 +21,8 @@ func init() {
 		}
 
 		// create context with the overall timeout
-		ctx := subproc.Context(env.deadline())
+		ctx, cancel := subproc.Context(env.deadline())
+		defer cancel()
 
 		// force quit after maximum timeout exceeded
 		subproc.SetExpiration(ctx)

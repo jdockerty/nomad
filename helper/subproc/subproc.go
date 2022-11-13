@@ -37,24 +37,19 @@ func Log(format string, args ...any) {
 }
 
 // Context creates a context setup with the given timeout.
-func Context(timeout time.Duration) context.Context {
+func Context(timeout time.Duration) (context.Context, context.CancelFunc) {
 	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, timeout)
-	return ctx
+	return context.WithTimeout(ctx, timeout)
 }
 
-// SetExpiration waits for ctx to expire, then force terminates the
-// process with ExitTimeout shortly after. If ctx has no deadline
-// no expiration is set.
+// SetExpiration is used to ensure the process terminates, once ctx
+// is complete. A short grace period is added to allow any cleanup
+// to happen first.
 func SetExpiration(ctx context.Context) {
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		return
-	}
+	const graceful = 5 * time.Second
 	go func() {
-		duration := deadline.Sub(time.Now())
-		duration += 3 * time.Second // graceful shutdown
-		time.Sleep(duration)
+		<-ctx.Done()
+		time.Sleep(graceful)
 		os.Exit(ExitTimeout)
 	}()
 }
