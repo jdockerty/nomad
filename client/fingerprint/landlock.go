@@ -25,15 +25,14 @@ func (f *LandlockFingerprint) Fingerprint(_ *FingerprintRequest, resp *Fingerpri
 	version, err := landlock.Detect()
 	if err != nil {
 		f.logger.Warn("failed to fingerprint kernel landlock feature", "error", err)
+		version = 0
 	}
 	switch version {
 	case 0:
 		resp.AddAttribute(landlockKey, "unavailable")
-	case 1, 2:
+	default:
 		v := fmt.Sprintf("v%d", version)
 		resp.AddAttribute(landlockKey, v)
-	default:
-		resp.AddAttribute(landlockKey, "unknown")
 	}
 	return nil
 }

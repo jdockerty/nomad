@@ -26,6 +26,7 @@ func TestLandlockFingerprint(t *testing.T) {
 		0: "unavailable",
 		1: "v1",
 		2: "v2",
+		3: "v3",
 	}
 	must.Eq(t, exp[version], result)
 }
