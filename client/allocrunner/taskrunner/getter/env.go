@@ -57,6 +57,18 @@ func (e *parameters) timeout() time.Duration {
 	return max
 }
 
+// executes returns true if go-getter will be used in a mode that
+// requires the use of exec
+func (e *parameters) executes() bool {
+	if strings.HasPrefix(e.Source, "git::") {
+		return true
+	}
+	if strings.HasPrefix(e.Source, "hg::") {
+		return true
+	}
+	return false
+}
+
 const (
 	// blocks from downloading executables (?)
 	umask = 060000000

@@ -24,8 +24,12 @@ func init() {
 		// force quit after maximum timeout exceeded
 		subproc.Expiration(env.timeout())
 
+		dir := env.TaskDir
+		executes := env.executes()
+		fmt.Println("dir", dir, "executes", executes, "env", os.Environ())
+
 		// sandbox the filesystem for this process
-		if err := lockdown(env.TaskDir); err != nil {
+		if err := lockdown(dir, executes); err != nil {
 			fail("failed to sandbox getter process: %v", err)
 			return subproc.ExitFailure
 		}
@@ -35,7 +39,7 @@ func init() {
 		// headers were already replaced and are usable now
 		c := env.client()
 
-		fmt.Println("CLIENT", "source", c.Src)
+		fmt.Println("CLIENT", "source", c.Src, "destination", c.Dst, "task_dir", env.TaskDir)
 
 		// run the go-getter client
 		if err := c.Get(); err != nil {

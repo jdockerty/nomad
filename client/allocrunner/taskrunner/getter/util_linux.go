@@ -9,6 +9,17 @@ import (
 	"github.com/shoenig/go-landlock"
 )
 
+var (
+	version int
+)
+
+func init() {
+	v, err := landlock.Detect()
+	if err == nil {
+		version = v
+	}
+}
+
 // credentials returns the UID and GID of the user the child process will run as.
 // On Linux this will be the nobody user.
 func credentials() (uint32, uint32) {
@@ -20,11 +31,18 @@ func credentials() (uint32, uint32) {
 // the task's task directory.
 // dir - the task directory
 //
-// Only applies to Linux, when active.
-func lockdown(dir string) error {
+// Only applies to Linux, when useable.
+func lockdown(dir string, executes bool) error {
+	// landlock not present in the kernel, do not sandbox
 	if !landlock.Available() {
 		return nil
 	}
+
+	// can only landlock git with version 2+, otherwise do not sandbox
+	if executes && version < 2 {
+		return nil
+	}
+
 	paths := []*landlock.Path{
 		landlock.DNS(),
 		landlock.Certs(),
