@@ -1,6 +1,8 @@
 package subproc
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"time"
 )
@@ -29,11 +31,30 @@ func Do(name string, f MainFunc) {
 	}
 }
 
-// Expiration waits for timeout to elapse, then causes the process to exit with
-// the ExitTimeout exit code.
-func Expiration(timeout time.Duration) {
+// Log the given message to standard error.
+func Log(format string, args ...any) {
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
+}
+
+// Context creates a context setup with the given timeout.
+func Context(timeout time.Duration) context.Context {
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, timeout)
+	return ctx
+}
+
+// SetExpiration waits for ctx to expire, then force terminates the
+// process with ExitTimeout shortly after. If ctx has no deadline
+// no expiration is set.
+func SetExpiration(ctx context.Context) {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return
+	}
 	go func() {
-		time.Sleep(timeout)
+		duration := deadline.Sub(time.Now())
+		duration += 3 * time.Second // graceful shutdown
+		time.Sleep(duration)
 		os.Exit(ExitTimeout)
 	}()
 }

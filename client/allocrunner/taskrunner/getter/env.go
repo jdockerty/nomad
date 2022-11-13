@@ -1,8 +1,10 @@
 package getter
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"strings"
 	"time"
 
@@ -46,14 +48,17 @@ func (e *parameters) read(r io.Reader) error {
 	return json.NewDecoder(r).Decode(e)
 }
 
-func (e *parameters) timeout() time.Duration {
-	max := time.Duration(0)
+// deadline returns an absolute deadline before the artifact download
+// sub-process forcefully terminates. The default is 1 hour, unless
+// one or more getter configurations is set higher.
+func (e *parameters) deadline() time.Duration {
+	const minimum = 1 * time.Hour
+	max := minimum
 	max = helper.Max(max, e.HTTPReadTimeout)
 	max = helper.Max(max, e.GCSTimeout)
 	max = helper.Max(max, e.GitTimeout)
 	max = helper.Max(max, e.HgTimeout)
 	max = helper.Max(max, e.S3Timeout)
-	max += 1 * time.Second
 	return max
 }
 
@@ -70,11 +75,12 @@ func (e *parameters) executes() bool {
 }
 
 const (
-	// blocks from downloading executables (?)
-	umask = 060000000
+	// stop privilege escalation via setuid/setgid
+	// https://github.com/hashicorp/nomad/issues/6176
+	umask = fs.ModeSetuid | fs.ModeSetgid
 )
 
-func (e *parameters) client() *getter.Client {
+func (e *parameters) client(ctx context.Context) *getter.Client {
 	httpGetter := &getter.HttpGetter{
 		Netrc:  true,
 		Client: cleanhttp.DefaultClient(),
@@ -98,7 +104,7 @@ func (e *parameters) client() *getter.Client {
 		MaxBytes: e.HTTPMaxBytes,
 	}
 	return &getter.Client{
-		Ctx:             nil, // maybe use this?
+		Ctx:             ctx,
 		Src:             e.Source,
 		Dst:             e.Destination,
 		Mode:            e.Mode,
