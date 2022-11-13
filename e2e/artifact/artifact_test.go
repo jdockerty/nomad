@@ -30,7 +30,7 @@ func testLinux(t *testing.T) {
 	// get allocation
 	allocations, err := e2eutil.AllocsForJob(jobID, "")
 	must.NoError(t, err)
-	must.Len(t, 2, allocations)
+	must.Len(t, 3, allocations)
 
 	// assert log contents for each task
 	// each task is designed to download the artifact in some way then

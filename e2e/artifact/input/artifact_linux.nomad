@@ -177,16 +177,16 @@ job "linux" {
       }
     }
   }
-  
+
   group "docker" {
-   task "docker_file_default" {
+    task "docker_file_default" {
       artifact {
         source = "https://raw.githubusercontent.com/hashicorp/go-set/main/go.mod"
       }
       driver = "docker"
       config {
-        command = "cat"
-        args    = ["local/go.mod"]
+        image = "bash:5"
+        args  = ["cat", "local/go.mod"]
       }
       resources {
         cpu    = 16
@@ -202,8 +202,8 @@ job "linux" {
       }
       driver = "docker"
       config {
-        command = "cat"
-        args    = ["local/my/path/go.mod"]
+        image = "bash:5"
+        args  = ["cat", "local/my/path/go.mod"]
       }
       resources {
         cpu    = 16
@@ -218,8 +218,8 @@ job "linux" {
       }
       driver = "docker"
       config {
-        command = "cat"
-        args    = ["local/go-set-main/go.mod"]
+        image = "bash:5"
+        args  = ["cat", "local/go-set-main/go.mod"]
       }
       resources {
         cpu    = 16
@@ -235,8 +235,8 @@ job "linux" {
       }
       driver = "docker"
       config {
-        command = "cat"
-        args    = ["local/my/zip/go-set-main/go.mod"]
+        image = "bash:5"
+        args  = ["cat", "local/my/zip/go-set-main/go.mod"]
       }
       resources {
         cpu    = 16
@@ -252,8 +252,8 @@ job "linux" {
       }
       driver = "docker"
       config {
-        command = "cat"
-        args    = ["local/repository/go.mod"]
+        image = "bash:5"
+        args  = ["cat", "local/repository/go.mod"]
       }
       resources {
         cpu    = 16
