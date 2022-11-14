@@ -16,7 +16,7 @@ func init() {
 		// get client and artifact configuration from standard IO
 		env := new(parameters)
 		if err := env.read(os.Stdin); err != nil {
-			subproc.Log("failed to read configuration: %v", err)
+			subproc.Print("failed to read configuration: %v", err)
 			return subproc.ExitFailure
 		}
 
@@ -32,7 +32,7 @@ func init() {
 
 		// sandbox the filesystem for this process
 		if err := lockdown(dir, executes); err != nil {
-			subproc.Log("failed to sandbox getter process: %v", err)
+			subproc.Print("failed to sandbox getter process: %v", err)
 			return subproc.ExitFailure
 		}
 
@@ -43,11 +43,11 @@ func init() {
 
 		// run the go-getter client
 		if err := c.Get(); err != nil {
-			subproc.Log("failed to download artifact: %v", err)
+			subproc.Print("failed to download artifact: %v", err)
 			return subproc.ExitFailure
 		}
 
-		subproc.Log("artifact download was a success")
+		subproc.Print("artifact download was a success")
 		return subproc.ExitSuccess
 	})
 }

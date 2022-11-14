@@ -1,8 +1,7 @@
 package getter
 
 import (
-	"fmt"
-
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/client/config"
 	"github.com/hashicorp/nomad/client/interfaces"
 	"github.com/hashicorp/nomad/nomad/structs"
@@ -10,21 +9,27 @@ import (
 
 // Sandbox is used for launching "getter" sub-process helpers for downloading
 // artifacts. A Nomad client creates one of these and the task runner will call
-// Get per artifact. Think "one site per browser tab" security model.
+// Get per artifact. Think "one process per browser tab" security model.
 type Sandbox interface {
 	Get(interfaces.EnvReplacer, *structs.TaskArtifact) error
 }
 
 // New creates a Sandbox with the given ArtifactConfig.
-func New(ac *config.ArtifactConfig) Sandbox {
-	return &sandbox{ac: ac}
+func New(ac *config.ArtifactConfig, logger hclog.Logger) Sandbox {
+	return &sandbox{
+		logger: logger.Named("artifact"),
+		ac:     ac,
+	}
 }
 
 type sandbox struct {
-	ac *config.ArtifactConfig
+	logger hclog.Logger
+	ac     *config.ArtifactConfig
 }
 
 func (s *sandbox) Get(env interfaces.EnvReplacer, artifact *structs.TaskArtifact) error {
+	s.logger.Debug("get", "source", artifact.GetterSource, "destination", artifact.RelativeDest)
+
 	source, err := getURL(env, artifact)
 	if err != nil {
 		return err
@@ -38,8 +43,6 @@ func (s *sandbox) Get(env interfaces.EnvReplacer, artifact *structs.TaskArtifact
 	mode := getMode(artifact)
 	headers := getHeaders(env, artifact)
 	dir := getTaskDir(env)
-
-	fmt.Println("eval taskDir:", dir)
 
 	params := &parameters{
 		HTTPReadTimeout: s.ac.HTTPReadTimeout,
@@ -55,10 +58,8 @@ func (s *sandbox) Get(env interfaces.EnvReplacer, artifact *structs.TaskArtifact
 		TaskDir:         dir,
 	}
 
-	err = runCmd(params)
-	if err != nil {
+	if err = runCmd(params, s.logger); err != nil {
 		return err
 	}
-
-	return nil // yay!
+	return nil
 }

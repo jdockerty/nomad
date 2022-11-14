@@ -1,7 +1,6 @@
 package getter
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,10 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/hashicorp/go-getter"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/client/interfaces"
+	"github.com/hashicorp/nomad/helper/subproc"
 	"github.com/hashicorp/nomad/nomad/structs"
 )
 
@@ -104,7 +104,7 @@ func minimalVars(taskDir string) []string {
 	}
 }
 
-func runCmd(env *parameters) *Error {
+func runCmd(env *parameters, logger hclog.Logger) *Error {
 	bin, err := exec.LookPath("nomad")
 	if err != nil {
 		return &Error{
@@ -114,11 +114,14 @@ func runCmd(env *parameters) *Error {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	// final method of ensuring subprocess termination
+	ctx, cancel := subproc.Context(env.deadline())
 	defer cancel()
 
+	// on unix systems, suprocess runs as nobody
 	uid, gid := credentials()
 
+	// start the subprocess, passing in parameters via stdin
 	cmd := exec.CommandContext(ctx, bin, ProcessName)
 	cmd.Env = minimalVars(env.TaskDir)
 	cmd.Stdin = env.reader()
@@ -128,14 +131,17 @@ func runCmd(env *parameters) *Error {
 			Gid: gid,
 		},
 	}
+
+	// wait for the subprocess to terminate
 	output, err := cmd.CombinedOutput()
-	fmt.Println("output", string(output))
 	if err != nil {
+		subproc.Log(output, logger.Warn)
 		return &Error{
 			URL:         env.Source,
 			Err:         fmt.Errorf("getter subprocess failed: %v", err),
 			Recoverable: true,
 		}
 	}
+	subproc.Log(output, logger.Debug)
 	return nil
 }

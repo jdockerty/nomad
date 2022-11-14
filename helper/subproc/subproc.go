@@ -1,6 +1,8 @@
 package subproc
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -31,9 +33,19 @@ func Do(name string, f MainFunc) {
 	}
 }
 
-// Log the given message to standard error.
-func Log(format string, args ...any) {
+// Print the given message to standard error.
+func Print(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
+}
+
+// Log the given output to the logger.
+func Log(output []byte, f func(msg string, args ...any)) {
+	reader := bytes.NewReader(output)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		f("getter", "output", line)
+	}
 }
 
 // Context creates a context setup with the given timeout.
