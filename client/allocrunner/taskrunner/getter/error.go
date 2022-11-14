@@ -9,6 +9,9 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
+	if e == nil || e.Err == nil {
+		return "<nil>"
+	}
 	return e.Err.Error()
 }
 
