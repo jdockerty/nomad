@@ -3,8 +3,6 @@
 package getter
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/nomad/helper/users"
 	"github.com/shoenig/go-landlock"
 )
@@ -55,6 +53,5 @@ func lockdown(dir string, executes bool) error {
 		landlock.Dir(dir, "rwc"),
 	}
 	locker := landlock.New(paths...)
-	fmt.Println("LOCKER", locker)
 	return locker.Lock(landlock.Enforce)
 }

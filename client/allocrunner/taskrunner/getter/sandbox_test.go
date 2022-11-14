@@ -1,12 +1,14 @@
 package getter
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/nomad/client/config"
+	"github.com/hashicorp/nomad/client/testutil"
+	"github.com/hashicorp/nomad/helper/testlog"
 	"github.com/hashicorp/nomad/helper/users"
 	"github.com/hashicorp/nomad/nomad/structs"
 	"github.com/shoenig/test/must"
@@ -31,33 +33,38 @@ func setupDir(t *testing.T) (string, string) {
 	return allocDir, taskDir
 }
 
-func TestSandbox_Get(t *testing.T) {
-	sbox := New(&config.ArtifactConfig{
-		HTTPReadTimeout: 0,
-		HTTPMaxBytes:    0,
-		GCSTimeout:      0,
-		GitTimeout:      0,
-		HgTimeout:       0,
-		S3Timeout:       0,
-	})
+func artifactConfig(timeout time.Duration) *config.ArtifactConfig {
+	return &config.ArtifactConfig{
+		HTTPReadTimeout: timeout,
+		HTTPMaxBytes:    1e6,
+		GCSTimeout:      timeout,
+		GitTimeout:      timeout,
+		HgTimeout:       timeout,
+		S3Timeout:       timeout,
+	}
+}
+
+// comprehensive scenarios tested in e2e/artifact
+
+func TestSandbox_Get_http(t *testing.T) {
+	testutil.RequireRoot(t)
+	logger := testlog.HCLogger(t)
+
+	ac := artifactConfig(10 * time.Second)
+	sbox := New(ac, logger)
 
 	_, taskDir := setupDir(t)
 	env := &noopReplacer{taskDir: taskDir}
-	fmt.Println("taskDir", taskDir)
 
 	artifact := &structs.TaskArtifact{
-		GetterSource:  "https://github.com/shoenig/test.git",
-		GetterOptions: nil,
-		GetterHeaders: nil,
-		GetterMode:    "auto",
-		RelativeDest:  "local/test",
+		GetterSource: "https://raw.githubusercontent.com/hashicorp/go-set/main/go.mod",
+		RelativeDest: "local/downloads",
 	}
 
 	err := sbox.Get(env, artifact)
+	must.NoError(t, err)
 
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-	} else {
-		fmt.Println("no error")
-	}
+	b, err := os.ReadFile(filepath.Join(taskDir, "local", "downloads", "go.mod"))
+	must.NoError(t, err)
+	must.StrContains(t, string(b), "module github.com/hashicorp/go-set")
 }
