@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-getter"
 	"github.com/hashicorp/nomad/helper"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 // parameters is encoded by the Nomad client and decoded by the getter sub-process
@@ -36,42 +38,80 @@ type parameters struct {
 	TaskDir string `json:"task_dir"`
 }
 
-func (e *parameters) reader() io.Reader {
-	b, err := json.Marshal(e)
+func (p *parameters) reader() io.Reader {
+	b, err := json.Marshal(p)
 	if err != nil {
 		b = nil
 	}
 	return strings.NewReader(string(b))
 }
 
-func (e *parameters) read(r io.Reader) error {
-	return json.NewDecoder(r).Decode(e)
+func (p *parameters) read(r io.Reader) error {
+	return json.NewDecoder(r).Decode(p)
 }
 
 // deadline returns an absolute deadline before the artifact download
 // sub-process forcefully terminates. The default is 1 hour, unless
 // one or more getter configurations is set higher.
-func (e *parameters) deadline() time.Duration {
+func (p *parameters) deadline() time.Duration {
 	const minimum = 1 * time.Hour
 	max := minimum
-	max = helper.Max(max, e.HTTPReadTimeout)
-	max = helper.Max(max, e.GCSTimeout)
-	max = helper.Max(max, e.GitTimeout)
-	max = helper.Max(max, e.HgTimeout)
-	max = helper.Max(max, e.S3Timeout)
+	max = helper.Max(max, p.HTTPReadTimeout)
+	max = helper.Max(max, p.GCSTimeout)
+	max = helper.Max(max, p.GitTimeout)
+	max = helper.Max(max, p.HgTimeout)
+	max = helper.Max(max, p.S3Timeout)
 	return max
 }
 
 // executes returns true if go-getter will be used in a mode that
-// requires the use of exec
-func (e *parameters) executes() bool {
-	if strings.HasPrefix(e.Source, "git::") {
+// requires the use of exec.
+func (p *parameters) executes() bool {
+	if strings.HasPrefix(p.Source, "git::") {
 		return true
 	}
-	if strings.HasPrefix(e.Source, "hg::") {
+	if strings.HasPrefix(p.Source, "hg::") {
 		return true
 	}
 	return false
+}
+
+// Equal returns whether p and o are the same.
+func (p *parameters) Equal(o *parameters) bool {
+	if p == nil || o == nil {
+		return p == o
+	}
+
+	switch {
+	case p.HTTPReadTimeout != o.HTTPReadTimeout:
+		return false
+	case p.HTTPMaxBytes != o.HTTPMaxBytes:
+		return false
+	case p.GCSTimeout != o.GCSTimeout:
+		return false
+	case p.GitTimeout != o.GitTimeout:
+		return false
+	case p.HgTimeout != o.HgTimeout:
+		return false
+	case p.S3Timeout != o.S3Timeout:
+		return false
+	case p.Mode != o.Mode:
+		return false
+	case p.Source != o.Source:
+		return false
+	case p.Destination != o.Destination:
+		return false
+	case p.TaskDir != o.TaskDir:
+		return false
+	case !maps.EqualFunc(p.Headers, o.Headers, eq):
+		return false
+	}
+
+	return true
+}
+
+func eq(a, b []string) bool {
+	return slices.Equal(a, b)
 }
 
 const (
@@ -80,11 +120,11 @@ const (
 	umask = fs.ModeSetuid | fs.ModeSetgid
 )
 
-func (e *parameters) client(ctx context.Context) *getter.Client {
+func (p *parameters) client(ctx context.Context) *getter.Client {
 	httpGetter := &getter.HttpGetter{
 		Netrc:  true,
 		Client: cleanhttp.DefaultClient(),
-		Header: e.Headers,
+		Header: p.Headers,
 
 		// Do not support the custom X-Terraform-Get header and
 		// associated logic.
@@ -97,32 +137,32 @@ func (e *parameters) client(ctx context.Context) *getter.Client {
 
 		// Read timeout for HTTP operations. Must be long enough to
 		// accommodate large/slow downloads.
-		ReadTimeout: e.HTTPReadTimeout,
+		ReadTimeout: p.HTTPReadTimeout,
 
 		// Maximum download size. Must be large enough to accommodate
 		// large downloads.
-		MaxBytes: e.HTTPMaxBytes,
+		MaxBytes: p.HTTPMaxBytes,
 	}
 	return &getter.Client{
 		Ctx:             ctx,
-		Src:             e.Source,
-		Dst:             e.Destination,
-		Mode:            e.Mode,
+		Src:             p.Source,
+		Dst:             p.Destination,
+		Mode:            p.Mode,
 		Umask:           umask,
 		Insecure:        false,
-		DisableSymlinks: false,
+		DisableSymlinks: true,
 		Getters: map[string]getter.Getter{
 			"git": &getter.GitGetter{
-				Timeout: e.GitTimeout,
+				Timeout: p.GitTimeout,
 			},
 			"hg": &getter.HgGetter{
-				Timeout: e.HgTimeout,
+				Timeout: p.HgTimeout,
 			},
 			"gcs": &getter.GCSGetter{
-				Timeout: e.GCSTimeout,
+				Timeout: p.GCSTimeout,
 			},
 			"s3": &getter.S3Getter{
-				Timeout: e.S3Timeout,
+				Timeout: p.S3Timeout,
 			},
 			"http":  httpGetter,
 			"https": httpGetter,
