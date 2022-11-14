@@ -21,7 +21,7 @@ const (
 	githubPrefixSSH = "git@github.com:"
 )
 
-func getURL(taskEnv interfaces.EnvReplacer, artifact *structs.TaskArtifact) (string, *Error) {
+func getURL(taskEnv interfaces.EnvReplacer, artifact *structs.TaskArtifact) (string, error) {
 	source := taskEnv.ReplaceEnv(artifact.GetterSource)
 
 	// fixup GitHub SSH URL such as git@github.com:hashicorp/nomad.git
@@ -56,7 +56,7 @@ func getURL(taskEnv interfaces.EnvReplacer, artifact *structs.TaskArtifact) (str
 	return sourceURL, nil
 }
 
-func getDestination(env interfaces.EnvReplacer, artifact *structs.TaskArtifact) (string, *Error) {
+func getDestination(env interfaces.EnvReplacer, artifact *structs.TaskArtifact) (string, error) {
 	destination, escapes := env.ClientPath(artifact.RelativeDest, true)
 	if escapes {
 		return "", &Error{
@@ -100,11 +100,12 @@ func minimalVars(taskDir string) []string {
 	tmpDir := filepath.Join(taskDir, "tmp")
 	return []string{
 		fmt.Sprintf("PATH=/usr/local/bin:/usr/bin:/bin"),
-		fmt.Sprintf("TMPDIR=%s", tmpDir),
+		fmt.Sprintf("TMPDIR=%s", tmpDir), // unix
+		fmt.Sprintf("TMP=%s", tmpDir),    // windows
 	}
 }
 
-func runCmd(env *parameters, logger hclog.Logger) *Error {
+func runCmd(env *parameters, logger hclog.Logger) error {
 	bin, err := exec.LookPath("nomad")
 	if err != nil {
 		return &Error{

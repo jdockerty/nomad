@@ -54,7 +54,7 @@ func TestSandbox_Get_http(t *testing.T) {
 	sbox := New(ac, logger)
 
 	_, taskDir := setupDir(t)
-	env := &noopReplacer{taskDir: taskDir}
+	env := noopTaskEnv(taskDir)
 
 	artifact := &structs.TaskArtifact{
 		GetterSource: "https://raw.githubusercontent.com/hashicorp/go-set/main/go.mod",
