@@ -18,3 +18,20 @@ func (e *Error) Error() string {
 func (e *Error) IsRecoverable() bool {
 	return e.Recoverable
 }
+
+func (e *Error) Equal(o *Error) bool {
+	if e == nil || o == nil {
+		return e == o
+	}
+
+	switch {
+	case e.URL != o.URL:
+		return false
+	case e.Recoverable != o.Recoverable:
+		return false
+	case e.Error() != o.Error():
+		return false
+	default:
+		return true
+	}
+}
