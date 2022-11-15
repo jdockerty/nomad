@@ -106,14 +106,8 @@ func minimalVars(taskDir string) []string {
 }
 
 func runCmd(env *parameters, logger hclog.Logger) error {
-	bin, err := exec.LookPath("nomad")
-	if err != nil {
-		return &Error{
-			URL:         env.Source,
-			Err:         fmt.Errorf("nomad executable not found: %v", err),
-			Recoverable: false,
-		}
-	}
+	// find the nomad process
+	bin := subproc.Self()
 
 	// final method of ensuring subprocess termination
 	ctx, cancel := subproc.Context(env.deadline())
@@ -123,7 +117,7 @@ func runCmd(env *parameters, logger hclog.Logger) error {
 	uid, gid := credentials()
 
 	// start the subprocess, passing in parameters via stdin
-	cmd := exec.CommandContext(ctx, bin, ProcessName)
+	cmd := exec.CommandContext(ctx, bin, SubCommand)
 	cmd.Env = minimalVars(env.TaskDir)
 	cmd.Stdin = env.reader()
 	cmd.SysProcAttr = &syscall.SysProcAttr{

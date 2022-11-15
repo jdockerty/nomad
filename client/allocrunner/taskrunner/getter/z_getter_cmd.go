@@ -7,11 +7,13 @@ import (
 )
 
 const (
-	ProcessName = "getter"
+	// SubCommand is the first argument to the clone of the nomad
+	// agent process for downloading artifacts.
+	SubCommand = "artifact-isolation"
 )
 
 func init() {
-	subproc.Do(ProcessName, func() int {
+	subproc.Do(SubCommand, func() int {
 
 		// get client and artifact configuration from standard IO
 		env := new(parameters)
