@@ -248,6 +248,7 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.10.0 // indirect
+	github.com/shoenig/go-landlock v0.1.1
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/softlayer/softlayer-go v0.0.0-20180806151055-260589d94c7d // indirect
@@ -282,9 +283,5 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
-
-require (
-	github.com/shoenig/go-landlock v0.1.0 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.66 // indirect
 )

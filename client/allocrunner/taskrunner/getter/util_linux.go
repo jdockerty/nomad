@@ -53,5 +53,5 @@ func lockdown(dir string, executes bool) error {
 		landlock.Dir(dir, "rwc"),
 	}
 	locker := landlock.New(paths...)
-	return locker.Lock(landlock.Enforce)
+	return locker.Lock(landlock.Mandatory)
 }
